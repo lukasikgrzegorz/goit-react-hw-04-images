@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import api from "./Services/api";
 import Searchbar from "./Components/Searchbar/Searchbar";
@@ -8,27 +8,21 @@ import Loader from "./Components/Loader/Loader";
 import Modal from "./Components/Modal/Modal";
 import OnError from "./Components/OnError/OnError";
 
-class App extends Component {
-	state = {
-		images: [],
-		isLoading: false,
-		error: null,
-		query: "",
-		actualPage: 1,
-		lastPage: 1,
-		modalIsOpen: false,
+const App = () => {
+	const [images, setImages] = useState([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [query, setQuery] = useState("");
+	const [actualPage, setActualPage] = useState(1);
+	const [lastPage, setLatPage] = useState(1);
+	const [modalIsOpen, setModalIsOpen] = useState(false);
+	const [modalPhotoURL, setModalPhotoURL] = useState(null);
+	const [modalAlt, setModalAlt] = useState(null);
+
+	const updateQuery = ({ query }) => {
+		setQuery(query);
 	};
 
-	modalInfo = {
-		modalPhotoURL: null,
-		modalAlt: null,
-	};
-
-	updateQuery = ({ query }) => {
-		this.setState({ query: query });
-	};
-
-	mapNewImages = (fetchedImages) => {
+	const mapNewImages = (fetchedImages) => {
 		const mapedImages = fetchedImages.map((image) => ({
 			id: image.id,
 			small: image.webformatURL,
@@ -38,108 +32,94 @@ class App extends Component {
 		return mapedImages;
 	};
 
-	goToNextPage = () => {
-		let { actualPage } = this.state;
-		actualPage++;
-		this.setState({ actualPage: actualPage });
+	const goToNextPage = () => {
+		setActualPage(actualPage + 1);
 	};
 
-	openModal = (e) => {
-		this.setState({
-			modalIsOpen: true,
-		});
-
-		this.modalInfo = {
-			modalPhotoURL: e.target.dataset["source"],
-			modalAlt: e.target.alt,
-		};
+	const openModal = (e) => {
+		setModalPhotoURL(e.target.dataset["source"]);
+		setModalAlt(e.target.alt);
+		setModalIsOpen(true);
 	};
 
-	closeModal = (e) => {
+	const closeModal = (e) => {
 		if (e.target.nodeName !== "IMG") {
-			this.setState({
-				modalIsOpen: false,
-			});
+			setModalIsOpen(false);
 		}
 	};
 
-	closeModalwithButton = (e) => {
+	const closeModalwithButton = (e) => {
 		if (e.key === "Escape") {
-			this.setState({
-				modalIsOpen: false,
-			});
+			setModalIsOpen(false);
 		}
 	};
 
-	async componentDidUpdate(prevProps, prevState) {
-		if (prevState.query !== this.state.query) {
-			const { query } = this.state;
-			this.setState({ isLoading: true });
-			try {
-				const fetchedData = await api.fetchImageWithQuery(query, 1);
-				const mapedImages = await this.mapNewImages(fetchedData.images);
-				const lastPage = Math.ceil(fetchedData.total / 12);
-				this.setState({ images: mapedImages, actualPage: 1, lastPage: lastPage });
-				window.scrollTo({ top: 0, behavior: "smooth" });
-			} catch (error) {
-				this.setState({ error });
-			} finally {
-				this.setState({ isLoading: false });
-			}
+	const fetchWitchQuery = async () => {
+		try {
+			setIsLoading(true);
+			const fetchedData = await api.fetchImageWithQuery(query, 1);
+			const mapedImages = await mapNewImages(fetchedData.images);
+			const lastPage = Math.ceil(fetchedData.total / 12);
+			setActualPage(1);
+			setImages([...mapedImages]);
+			setLatPage(lastPage);
+			window.scrollTo({ top: 0, behavior: "smooth" });
+		} catch (error) {
+			console.log("Error");
+		} finally {
+			setIsLoading(false);
 		}
+	};
 
-		if (
-			prevState.actualPage !== this.state.actualPage &&
-			prevState.query === this.state.query &&
-			this.state.actualPage !== 1
-		) {
-			const { query, actualPage, images } = this.state;
-			this.setState({ isLoading: true });
-			try {
-				const fetchedData = await api.fetchImageWithQuery(query, actualPage);
-				const mapedImages = await this.mapNewImages(fetchedData.images);
-				const concatImages = images.concat(mapedImages);
-				this.setState({ images: concatImages });
-			} catch (error) {
-				this.setState({ error });
-			} finally {
-				this.setState({ isLoading: false });
-			}
+	useEffect(() => {
+		if (query !== "") {
+			fetchWitchQuery();
 		}
-	}
+	}, [query]);
 
-	render() {
-		const { images, actualPage, lastPage, isLoading, modalIsOpen, query } = this.state;
-		const { modalPhotoURL, modalAlt } = this.modalInfo;
+	const fetchWithButton = async () => {
+		try {
+			setIsLoading(true);
+			const fetchedData = await api.fetchImageWithQuery(query, actualPage);
+			const mapedImages = await mapNewImages(fetchedData.images);
+			const concatImages = images.concat(mapedImages);
+			setImages([...concatImages]);
+		} catch (error) {
+			console.log("Error");
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-		return (
-			<>
-				{modalIsOpen && (
-					<Modal
-						src={modalPhotoURL}
-						alt={modalAlt}
-						closeHandler={this.closeModal}
-						escHandler={this.closeModalwithButton}
-					></Modal>
-				)}
-				<Searchbar onSubmit={this.updateQuery}></Searchbar>
-				<ImageGallery
-					images={images}
-					page={actualPage}
-					clickHanlder={this.openModal}
-				></ImageGallery>
-				{actualPage !== lastPage && images.length > 0 && isLoading === false ? (
-					<Button onClick={this.goToNextPage}></Button>
-				) : (
-					""
-				)}
-				{isLoading && <Loader></Loader>}
-				{images.length === 0 && query !== "" && isLoading === false && (
-					<OnError>Nothing found! Try again</OnError>
-				)}
-			</>
-		);
-	}
-}
+	useEffect(() => {
+		if (actualPage !== 1) {
+			fetchWithButton();
+		}
+	}, [actualPage]);
+
+	return (
+		<>
+			{modalIsOpen && (
+				<Modal
+					src={modalPhotoURL}
+					alt={modalAlt}
+					closeHandler={closeModal}
+					escHandler={closeModalwithButton}
+				></Modal>
+			)}
+			<Searchbar onSubmit={updateQuery}></Searchbar>
+			<ImageGallery images={images} page={actualPage} clickHanlder={openModal}></ImageGallery>
+			{actualPage !== lastPage && images.length > 0 && isLoading === false ? (
+				<Button onClick={goToNextPage}></Button>
+			) : (
+				""
+			)}
+			{isLoading && <Loader></Loader>}
+			{images.length === 0 && query !== "" && isLoading === false && (
+				<OnError>Nothing found! Try again</OnError>
+			)}
+		</>
+	);
+};
 
 export default App;

@@ -4,10 +4,8 @@ import PropTypes from "prop-types";
 
 const Modal = (props) => {
 	const { src, alt, closeHandler, escHandler } = props;
-
 	useEffect(() => {
 		document.addEventListener("keydown", escHandler);
-
 		return () => {
 			document.removeEventListener("keydown", escHandler);
 		};
