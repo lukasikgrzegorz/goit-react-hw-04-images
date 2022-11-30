@@ -3,24 +3,16 @@ import css from "./Modal.module.css";
 import PropTypes from "prop-types";
 
 const Modal = (props) => {
-	// componentDidMount() {
-	//
-	// }
-
-	// componentWillUnmount() {
-	// 	document.removeEventListener("keydown", this.props.escHandler);
-	// }
+	const { src, alt, closeHandler, escHandler } = props;
 
 	useEffect(() => {
-		document.addEventListener("keydown", props.escHandler);
+		document.addEventListener("keydown", escHandler);
 
 		return () => {
-			document.removeEventListener("keydown", props.escHandler);
+			document.removeEventListener("keydown", escHandler);
 		};
+	}, [escHandler]);
 
-	}, []);
-
-	const { src, alt, closeHandler } = props;
 	return (
 		<div className={css["overlay"]} onClick={closeHandler}>
 			<div className={css["modal"]}>
