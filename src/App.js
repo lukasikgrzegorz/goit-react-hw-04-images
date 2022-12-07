@@ -107,14 +107,14 @@ const App = () => {
 					escHandler={closeModalwithButton}
 				></Modal>
 			)}
-			<Searchbar onSubmit={updateQuery}></Searchbar>
-			<ImageGallery images={images} page={actualPage} clickHanlder={openModal}></ImageGallery>
+			<Searchbar onSubmit={updateQuery} />
+			<ImageGallery images={images} page={actualPage} clickHanlder={openModal} />
 			{actualPage !== lastPage && images.length > 0 && isLoading === false ? (
-				<Button onClick={goToNextPage}></Button>
+				<Button onClick={goToNextPage} />
 			) : (
 				""
 			)}
-			{isLoading && <Loader></Loader>}
+			{isLoading && <Loader />}
 			{images.length === 0 && query !== "" && isLoading === false && (
 				<OnError>Nothing found! Try again</OnError>
 			)}
